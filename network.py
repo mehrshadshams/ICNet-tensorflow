@@ -133,6 +133,20 @@ class Network(object):
              padding=DEFAULT_PADDING,
              group=1,
              biased=True):
+        return self._conv(input, k_h, k_w, c_o, s_h, s_w, name, relu=relu, padding=padding, group=group, biased=biased)
+
+    def _conv(self,
+             input,
+             k_h,
+             k_w,
+             c_o,
+             s_h,
+             s_w,
+             name,
+             relu=True,
+             padding=DEFAULT_PADDING,
+             group=1,
+             biased=True):
         # Verify that the padding is acceptable
         self.validate_padding(padding)
         # Get the number of channels in the input

@@ -18,10 +18,10 @@ from image_reader import ImageReader
 IMG_MEAN = np.array((103.939, 116.779, 123.68), dtype=np.float32)
 
 # If you want to apply to other datasets, change following four lines
-DATA_DIR = '/PATH/TO/CITYSCAPES_DATASET'
-DATA_LIST_PATH = './list/cityscapes_train_list.txt' 
+DATA_DIR = '../lyft-challenge/data/source/'
+DATA_LIST_PATH = '../lyft-challenge/data/source/files.txt' 
 IGNORE_LABEL = 255 # The class number of background
-INPUT_SIZE = '720, 720' # Input size for training
+INPUT_SIZE = '600, 800' # Input size for training
 
 BATCH_SIZE = 16 
 LEARNING_RATE = 1e-3
@@ -138,16 +138,24 @@ def main():
     
     net = ICNet_BN({'data': image_batch}, is_training=True, num_classes=args.num_classes, filter_scale=args.filter_scale)
     
-    sub4_out = net.layers['sub4_out']
-    sub24_out = net.layers['sub24_out']
-    sub124_out = net.layers['conv6_cls']
+    # sub4_out = net.layers['sub4_out']
+    # sub24_out = net.layers['sub24_out']
+    # sub124_out = net.layers['conv6_cls']
+
+    sub12_sum_interp = net.layers['sub12_sum_interp']
+    conv5_4_interp = net.layers['conv5_4_interp']
+    sub24_sum_interp = net.layers['sub24_sum_interp']
+
+    new_classes = 13
+
+    sub124_out, sub4_out, sub24_out = net.find_tune(new_classes)
 
     restore_var = tf.global_variables()
     all_trainable = [v for v in tf.trainable_variables() if ('beta' not in v.name and 'gamma' not in v.name) or args.train_beta_gamma]
    
-    loss_sub4 = create_loss(sub4_out, label_batch, args.num_classes, args.ignore_label)
-    loss_sub24 = create_loss(sub24_out, label_batch, args.num_classes, args.ignore_label)
-    loss_sub124 = create_loss(sub124_out, label_batch, args.num_classes, args.ignore_label)
+    loss_sub4 = create_loss(sub4_out, label_batch, new_classes, args.ignore_label)
+    loss_sub24 = create_loss(sub24_out, label_batch, new_classes, args.ignore_label)
+    loss_sub124 = create_loss(sub124_out, label_batch, new_classes, args.ignore_label)
     l2_losses = [args.weight_decay * tf.nn.l2_loss(v) for v in tf.trainable_variables() if 'weights' in v.name]
     
     reduced_loss = LAMBDA1 * loss_sub4 +  LAMBDA2 * loss_sub24 + LAMBDA3 * loss_sub124 + tf.add_n(l2_losses)
